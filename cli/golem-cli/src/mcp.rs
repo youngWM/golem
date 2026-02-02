@@ -246,6 +246,19 @@ impl<Hooks: CommandHandlerHooks + 'static> ServerHandler for McpHandler<Hooks> {
                                 "type": "object",
                                 "properties": {}
                             }
+                        },
+                        {
+                            "name": "list_components",
+                            "description": "List all deployed components",
+                            "inputSchema": {
+                                "type": "object",
+                                "properties": {
+                                    "project_name": {
+                                        "type": "string",
+                                        "description": "Optional project name to filter by"
+                                    }
+                                }
+                            }
                         }
                     ]
                 });
@@ -268,6 +281,10 @@ impl<Hooks: CommandHandlerHooks + 'static> ServerHandler for McpHandler<Hooks> {
                     },
                     "get_info" => {
                         self.invoke_cli(vec!["--version".to_string()]).await?
+                    },
+                    "list_components" => {
+                        // TODO: Handle project_name filter if needed, for now just list all
+                        self.invoke_cli(vec!["component".to_string(), "list".to_string()]).await?
                     },
                     _ => return Err(Error::protocol(ErrorCode::MethodNotFound, format!("Unknown tool: {}", name))),
                 };
