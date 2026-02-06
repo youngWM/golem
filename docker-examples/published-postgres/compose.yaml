@@ -24,7 +24,7 @@ services:
       - golem-registry-service
       - golem-debugging-service
     volumes:
-        - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ./nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
 
   redis:
     image: redis:${REDIS_IMAGE_VERSION}
@@ -40,7 +40,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U golem_user -d golem_db"]
+      test: [ "CMD-SHELL", "pg_isready -U golem_user -d golem_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -49,19 +49,18 @@ services:
     image: golemservices/registry-service:${GOLEM_IMAGES_VERSION}
     pull_policy: always
     restart: on-failure
+    ports:
+      - "8083:8083"
     environment:
       GOLEM_ENVIRONMENT: local
       RUST_BACKTRACE: 1
       RUST_LOG=info,h2=warn,hyper=warn,tower: warn
-
-      GOLEM__HTTP_PORT: ${REGISTRY_SERVICE_HTTP_PORT}
+      GOLEM__HTTP_PORT: 8083
       GOLEM__GRPC__PORT: ${REGISTRY_SERVICE_GRPC_PORT}
-
       GOLEM__CORS_ORIGIN_REGEX: ${CORS_ORIGIN_REGEX}
       GOLEM__INITIAL_ACCOUNTS__ROOT__TOKEN: ${ADMIN_TOKEN}
       GOLEM__INITIAL_ACCOUNTS__MARKETING__TOKEN: ${MARKETING_TOKEN}
       GOLEM__LOGIN__TYPE: Disabled
-
       GOLEM__DB__TYPE: Postgres
       GOLEM__DB__CONFIG__DATABASE: golem_db
       GOLEM__DB__CONFIG__MAX_CONNECTIONS: 10
@@ -69,9 +68,8 @@ services:
       GOLEM__DB__CONFIG__PORT: 5432
       GOLEM__DB__CONFIG__USERNAME: golem_user
       GOLEM__DB__CONFIG__PASSWORD: golem_password
-
-      GOLEM__COMPILATION__CONFIG__HOST: golem-component-compilation-service
-      GOLEM__COMPILATION__CONFIG__PORT: ${COMPONENT_COMPILATION_SERVICE_GRPC_PORT}
+      GOLEM__COMPONENT_COMPILATION__CONFIG__HOST: golem-component-compilation-service
+      GOLEM__COMPONENT_COMPILATION__CONFIG__PORT: ${COMPONENT_COMPILATION_SERVICE_GRPC_PORT}
     depends_on:
       postgres:
         condition: service_healthy
@@ -84,10 +82,8 @@ services:
       RUST_BACKTRACE: 1
       RUST_LOG=info,h2=warn,hyper=warn,tower: warn
       GOLEM__ENVIRONMENT: local
-
       GOLEM__HTTP_PORT: ${SHARD_MANAGER_HTTP_PORT}
       GOLEM__GRPC__PORT: ${SHARD_MANAGER_GRPC_PORT}
-
       GOLEM__PERSISTENCE__TYPE: "Redis"
       GOLEM__PERSISTENCE__CONFIG__HOST: redis
       GOLEM__PERSISTENCE__CONFIG__PORT: 6379
@@ -98,28 +94,25 @@ services:
     image: golemservices/golem-worker-service:${GOLEM_IMAGES_VERSION}
     pull_policy: always
     restart: on-failure
+    ports:
+      - "9005:9005"
+      - "9006:9006"
     environment:
       RUST_BACKTRACE: 1
       RUST_LOG=info,h2=warn,hyper=warn,tower: warn
       GOLEM__ENVIRONMENT: local
-
-      GOLEM__CUSTOM_REQUEST_PORT: ${WORKER_SERVICE_CUSTOM_REQUEST_PORT}
-      GOLEM__PORT: ${WORKER_SERVICE_HTTP_PORT}
+      GOLEM__CUSTOM_REQUEST_PORT: 9006
+      GOLEM__PORT: 9005
       GOLEM__GRPC__PORT: ${WORKER_SERVICE_GRPC_PORT}
-
       GOLEM__GATEWAY_SESSION_STORAGE__TYPE: "Redis"
       GOLEM__GATEWAY_SESSION_STORAGE__CONFIG__HOST: redis
       GOLEM__GATEWAY_SESSION_STORAGE__CONFIG__PORT: 6379
-
       GOLEM__REGISTRY_SERVICE__HOST: golem-registry-service
       GOLEM__REGISTRY_SERVICE__PORT: ${REGISTRY_SERVICE_GRPC_PORT}
-
       GOLEM__ROUTING_TABLE__HOST: golem-shard-manager
       GOLEM__ROUTING_TABLE__PORT: ${SHARD_MANAGER_GRPC_PORT}
     volumes:
       - blob_storage:/blob_storage
-    ports:
-      - "${WORKER_SERVICE_CUSTOM_REQUEST_PORT}:${WORKER_SERVICE_CUSTOM_REQUEST_PORT}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -137,13 +130,11 @@ services:
     pull_policy: always
     restart: on-failure
     environment:
-      <<: [*blob-storage-env-vars]
+      <<: [ *blob-storage-env-vars ]
       RUST_BACKTRACE: 1
       RUST_LOG=info,h2=warn,hyper=warn,tower: warn
-
       GOLEM__HTTP_PORT: ${COMPONENT_COMPILATION_SERVICE_HTTP_PORT}
       GOLEM__GRPC__PORT: ${COMPONENT_COMPILATION_SERVICE_GRPC_PORT}
-
       GOLEM__REGISTRY_SERVICE__TYPE: "Static"
       GOLEM__REGISTRY_SERVICE__CONFIG__HOST: golem-registry-service
       GOLEM__REGISTRY_SERVICE__CONFIG__PORT: ${REGISTRY_SERVICE_GRPC_PORT}
@@ -157,23 +148,18 @@ services:
     pull_policy: always
     restart: on-failure
     environment:
-      <<: [*blob-storage-env-vars]
+      <<: [ *blob-storage-env-vars ]
       WASMTIME_BACKTRACE_DETAILS: 1
       RUST_BACKTRACE: 1
       RUST_LOG: info
-
       GOLEM__HTTP_PORT: ${WORKER_EXECUTOR_HTTP_PORT}
       GOLEM__GRPC__PORT: ${WORKER_EXECUTOR_GRPC_PORT}
-
       GOLEM__KEY_VALUE_STORAGE__TYPE: "Redis"
       GOLEM__KEY_VALUE_STORAGE__CONFIG__HOST: redis
       GOLEM__KEY_VALUE_STORAGE__CONFIG__PORT: 6379
-
       GOLEM__INDEXED_STORAGE__TYPE: "KVStoreRedis"
-
       GOLEM__REGISTRY_SERVICE__HOST: golem-registry-service
       GOLEM__REGISTRY_SERVICE__PORT: ${REGISTRY_SERVICE_GRPC_PORT}
-
       GOLEM__SHARD_MANAGER_SERVICE__TYPE: "Grpc"
       GOLEM__SHARD_MANAGER_SERVICE__CONFIG__HOST: golem-shard-manager
       GOLEM__SHARD_MANAGER_SERVICE__CONFIG__PORT: ${SHARD_MANAGER_GRPC_PORT}
@@ -181,10 +167,8 @@ services:
       GOLEM__SHARD_MANAGER_SERVICE__CONFIG__RETRIES__MIN_DELAY: "100ms"
       GOLEM__SHARD_MANAGER_SERVICE__CONFIG__RETRIES__MAX_DELAY: "2s"
       GOLEM__SHARD_MANAGER_SERVICE__CONFIG__RETRIES__MULTIPLIER: 2
-
       GOLEM__PUBLIC_WORKER_API__HOST: golem-worker-service
       GOLEM__PUBLIC_WORKER_API__PORT: ${WORKER_SERVICE_GRPC_PORT}
-
       GOLEM__COMPILED_COMPONENT_SERVICE__TYPE: "Enabled"
     volumes:
       - blob_storage:/blob_storage
@@ -198,23 +182,18 @@ services:
     pull_policy: always
     restart: on-failure
     environment:
-      <<: [*blob-storage-env-vars]
+      <<: [ *blob-storage-env-vars ]
       WASMTIME_BACKTRACE_DETAILS: 1
       RUST_BACKTRACE: 1
       RUST_LOG: info
-
       GOLEM__COMPILED_COMPONENT_SERVICE__TYPE: "Enabled"
       GOLEM__HTTP_PORT: ${DEBUGGING_SERVICE_HTTP_PORT}
-
       GOLEM__KEY_VALUE_STORAGE__TYPE: "Redis"
       GOLEM__KEY_VALUE_STORAGE__CONFIG__PORT: 6379
       GOLEM__KEY_VALUE_STORAGE__CONFIG__HOST: redis
-
       GOLEM__INDEXED_STORAGE__TYPE: "KVStoreRedis"
-
       GOLEM__REGISTRY_SERVICE__HOST: golem-registry-service
       GOLEM__REGISTRY_SERVICE__PORT: ${REGISTRY_SERVICE_GRPC_PORT}
-
       GOLEM__PUBLIC_WORKER_API__HOST: golem-worker-service
       GOLEM__PUBLIC_WORKER_API__PORT: ${WORKER_SERVICE_GRPC_PORT}
     volumes:
