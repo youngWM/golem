@@ -1,7 +1,7 @@
 x-aliases:
   blob-storage-env-vars: &blob-storage-env-vars
     GOLEM__BLOB_STORAGE__TYPE: "LocalFileSystem"
-    GOLEM__BLOB_STORAGE__CONFIG__ROOT: "/worker_executor_store"
+    GOLEM__BLOB_STORAGE__CONFIG__ROOT: "/blob_storage"
 
 services:
   router:
@@ -52,6 +52,13 @@ services:
     ports:
       - "8083:8083"
     environment:
+      <<: [ *blob-storage-env-vars ]
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      NO_PROXY: "localhost,127.0.0.1,postgres,redis,golem-shard-manager,golem-worker-service,golem-registry-service,golem-component-compilation-service"
+      no_proxy: "localhost,127.0.0.1,postgres,redis,golem-shard-manager,golem-worker-service,golem-registry-service,golem-component-compilation-service"
       GOLEM_ENVIRONMENT: local
       RUST_BACKTRACE: 1
       RUST_LOG=info,h2=warn,hyper=warn,tower: warn
@@ -68,8 +75,10 @@ services:
       GOLEM__DB__CONFIG__PORT: 5432
       GOLEM__DB__CONFIG__USERNAME: golem_user
       GOLEM__DB__CONFIG__PASSWORD: golem_password
-      GOLEM__COMPONENT_COMPILATION__CONFIG__HOST: golem-component-compilation-service
-      GOLEM__COMPONENT_COMPILATION__CONFIG__PORT: ${COMPONENT_COMPILATION_SERVICE_GRPC_PORT}
+      GOLEM__COMPILATION__CONFIG__HOST: golem-component-compilation-service
+      GOLEM__COMPILATION__CONFIG__PORT: ${COMPONENT_COMPILATION_SERVICE_GRPC_PORT}
+    volumes:
+      - blob_storage:/blob_storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -79,6 +88,12 @@ services:
     pull_policy: always
     restart: on-failure
     environment:
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      NO_PROXY: "localhost,127.0.0.1,redis"
+      no_proxy: "localhost,127.0.0.1,redis"
       RUST_BACKTRACE: 1
       RUST_LOG=info,h2=warn,hyper=warn,tower: warn
       GOLEM__ENVIRONMENT: local
@@ -98,6 +113,13 @@ services:
       - "9005:9005"
       - "9006:9006"
     environment:
+      <<: [ *blob-storage-env-vars ]
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      NO_PROXY: "localhost,127.0.0.1,redis,golem-registry-service,golem-shard-manager,golem-worker-executor"
+      no_proxy: "localhost,127.0.0.1,redis,golem-registry-service,golem-shard-manager,golem-worker-executor"
       RUST_BACKTRACE: 1
       RUST_LOG=info,h2=warn,hyper=warn,tower: warn
       GOLEM__ENVIRONMENT: local
@@ -131,6 +153,12 @@ services:
     restart: on-failure
     environment:
       <<: [ *blob-storage-env-vars ]
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      NO_PROXY: "localhost,127.0.0.1,golem-registry-service"
+      no_proxy: "localhost,127.0.0.1,golem-registry-service"
       RUST_BACKTRACE: 1
       RUST_LOG=info,h2=warn,hyper=warn,tower: warn
       GOLEM__HTTP_PORT: ${COMPONENT_COMPILATION_SERVICE_HTTP_PORT}
@@ -149,6 +177,12 @@ services:
     restart: on-failure
     environment:
       <<: [ *blob-storage-env-vars ]
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      NO_PROXY: "localhost,127.0.0.1,redis,golem-shard-manager,golem-registry-service,golem-worker-service"
+      no_proxy: "localhost,127.0.0.1,redis,golem-shard-manager,golem-registry-service,golem-worker-service"
       WASMTIME_BACKTRACE_DETAILS: 1
       RUST_BACKTRACE: 1
       RUST_LOG: info
@@ -183,6 +217,12 @@ services:
     restart: on-failure
     environment:
       <<: [ *blob-storage-env-vars ]
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+      NO_PROXY: "localhost,127.0.0.1,redis,golem-shard-manager,golem-registry-service,golem-worker-service"
+      no_proxy: "localhost,127.0.0.1,redis,golem-shard-manager,golem-registry-service,golem-worker-service"
       WASMTIME_BACKTRACE_DETAILS: 1
       RUST_BACKTRACE: 1
       RUST_LOG: info
