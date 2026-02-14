@@ -98,6 +98,15 @@ pub struct CommandHandler<Hooks: CommandHandlerHooks> {
     hooks: Arc<Hooks>,
 }
 
+impl<Hooks: CommandHandlerHooks> Clone for CommandHandler<Hooks> {
+    fn clone(&self) -> Self {
+        Self {
+            ctx: self.ctx.clone(),
+            hooks: self.hooks.clone(),
+        }
+    }
+}
+
 impl<Hooks: CommandHandlerHooks + 'static> CommandHandler<Hooks> {
     // NOTE: setting log_output_for_help also means that we are loading the context for showing
     //       help or messages with help, meaning validation warns and confirms should be silenced
@@ -140,13 +149,13 @@ impl<Hooks: CommandHandlerHooks + 'static> CommandHandler<Hooks> {
         let result = match GolemCliCommand::try_parse_from_lenient(args_iterator, true) {
             GolemCliCommandParseResult::FullMatch(command) => {
                 #[cfg(feature = "server-commands")]
-                let verbosity = if matches!(command.subcommand, GolemCliSubcommand::Server { .. }) {
+                let verbosity = if matches!(command.subcommand, Some(GolemCliSubcommand::Server { .. })) {
                     Hooks::override_verbosity(command.global_flags.verbosity())
                 } else {
                     command.global_flags.verbosity()
                 };
                 #[cfg(feature = "server-commands")]
-                let pretty_mode = if matches!(command.subcommand, GolemCliSubcommand::Server { .. })
+                let pretty_mode = if matches!(command.subcommand, Some(GolemCliSubcommand::Server { .. }))
                 {
                     Hooks::override_pretty_mode()
                 } else {
@@ -257,8 +266,23 @@ impl<Hooks: CommandHandlerHooks + 'static> CommandHandler<Hooks> {
         })
     }
 
-    async fn handle_command(&self, command: GolemCliCommand) -> anyhow::Result<()> {
-        match command.subcommand {
+    pub async fn run_mcp_server(&self, port: Option<u16>) -> anyhow::Result<()> {
+        let handler = crate::mcp::McpHandler::new(Arc::new(self.clone()));
+        handler.run(port).await
+    }
+
+    pub(crate) async fn handle_command(&self, command: GolemCliCommand) -> anyhow::Result<()> {
+        let subcommand = match command.subcommand {
+            Some(subcommand) => subcommand,
+            None => {
+                if command.serve {
+                    return self.run_mcp_server(command.serve_port).await;
+                } else {
+                    anyhow::bail!("No subcommand provided. Use --help for more information.");
+                }
+            }
+        };
+        match subcommand {
             // App scoped root commands
             GolemCliSubcommand::New {
                 application_name,
